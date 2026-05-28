@@ -1,10 +1,9 @@
 from neo4j import GraphDatabase
-from typing import List 
+from typing import List
 from AgreementSchema import Agreement, ClauseType,Party, ContractClause
 from neo4j_graphrag.retrievers import VectorCypherRetriever,Text2CypherRetriever
-from neo4j_graphrag.embeddings import OpenAIEmbeddings
 from formatters import my_vector_search_excerpt_record_formatter
-from neo4j_graphrag.llm import OpenAILLM
+from llm_provider import get_graphrag_embedder, get_graphrag_llm
 
 
 
@@ -12,9 +11,8 @@ class ContractSearchService:
     def __init__(self, uri, user ,pwd ):
         driver = GraphDatabase.driver(uri, auth=(user, pwd))
         self._driver = driver
-        self._openai_embedder = OpenAIEmbeddings(model = "text-embedding-3-small")
-        # Create LLM object. Used to generate the CYPHER queries
-        self._llm = OpenAILLM(model_name="gpt-4o", model_params={"temperature": 0}) 
+        self._openai_embedder = get_graphrag_embedder()
+        self._llm = get_graphrag_llm()
         
     
     async def get_contract(self, contract_id: int) -> Agreement:

@@ -3,3 +3,16 @@ neo4j-graphrag == 1.0.0
 semantic-kernel == 1.11.0
 streamlit == 1.39.0
 openai == 1.51.2
+
+# Anthropic / Claude
+anthropic >= 0.40.0
+
+# Google / Gemini  (also used by the semantic-kernel Google connector)
+google-generativeai >= 0.8.0
+
+# PDF text extraction for local models that don't support native PDF input
+pdfplumber >= 0.11.0
+
+# Sentence-Transformer embeddings — used when provider=anthropic or when
+# provider=local with no LOCAL_BASE_URL set
+sentence-transformers >= 3.0.0

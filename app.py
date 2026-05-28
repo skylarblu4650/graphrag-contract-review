@@ -2,23 +2,18 @@ import streamlit as st
 import os
 import asyncio
 from semantic_kernel import Kernel
-from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
 from semantic_kernel.contents.chat_history import ChatHistory
 from ContractPlugin import ContractPlugin
 from ContractService import ContractSearchService
 from semantic_kernel.connectors.ai.chat_completion_client_base import ChatCompletionClientBase
-from semantic_kernel.connectors.ai.open_ai.prompt_execution_settings.open_ai_prompt_execution_settings import (
-    OpenAIChatPromptExecutionSettings)
 from semantic_kernel.connectors.ai.function_choice_behavior import FunctionChoiceBehavior
-from semantic_kernel.functions.kernel_arguments import KernelArguments
+from llm_provider import get_sk_service
 import logging
 import time
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
-# Get info from environment
-OPENAI_KEY = os.getenv('OPENAI_API_KEY')
 NEO4J_URI = os.getenv('NEO4J_URI', 'bolt://localhost:7687')
 NEO4J_USER = os.getenv('NEO4J_USERNAME', 'neo4j')
 NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD')
@@ -37,12 +32,11 @@ if 'semantic_kernel' not in st.session_state:
     contract_search_neo4j = ContractSearchService(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
     kernel.add_plugin(ContractPlugin(contract_search_service=contract_search_neo4j), plugin_name="contract_search")
 
-    # Add the OpenAI chat completion service to the Kernel
-    kernel.add_service(OpenAIChatCompletion(ai_model_id="gpt-4o", api_key=OPENAI_KEY, service_id=service_id))
+    # Add the chat completion service (provider selected via LLM_PROVIDER env var)
+    kernel.add_service(get_sk_service(service_id))
 
     # Enable automatic function calling
-    settings: OpenAIChatPromptExecutionSettings = kernel.get_prompt_execution_settings_from_service_id(
-        service_id=service_id)
+    settings = kernel.get_prompt_execution_settings_from_service_id(service_id=service_id)
     settings.function_choice_behavior = FunctionChoiceBehavior.Auto(filters={"included_plugins": ["contract_search"]})
 
     # Create a history of the conversation
@@ -71,7 +65,7 @@ async def get_agent_response(user_input):
 
     # Get the response from the agent
         try:
-            chat_completion: OpenAIChatCompletion = kernel.get_service(type=ChatCompletionClientBase)
+            chat_completion = kernel.get_service(type=ChatCompletionClientBase)
             
             result = (await chat_completion.get_chat_message_contents(
                 chat_history=history,
